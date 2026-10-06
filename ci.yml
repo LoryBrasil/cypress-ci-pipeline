@@ -1,0 +1,88 @@
+name: Pipeline CI - Testes E2E Cypress
+
+on:
+  # 1) Execução automática a cada push (e pull request) na branch main
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+  # 2) Execução manual pela aba Actions > Run workflow
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: 'Navegador para executar os testes'
+        required: true
+        default: 'chrome'
+        type: choice
+        options:
+          - chrome
+          - electron
+          - firefox
+
+  # 3) Execução agendada: seg a sex às 11:00 UTC (07:00 em Manaus)
+  schedule:
+    - cron: '0 11 * * 1-5'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-tests:
+    name: Testes E2E (Cypress)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Navegador escolhido manualmente; nos demais gatilhos usa chrome
+      BROWSER: ${{ github.event.inputs.browser || 'chrome' }}
+
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Executar testes Cypress
+        id: cypress
+        run: npx cypress run --browser "$BROWSER"
+
+      - name: Resumo dos testes no Job Summary
+        if: always()
+        run: node scripts/summary.js
+
+      - name: Publicar relatório HTML (artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-cypress
+          path: cypress/reports
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Publicar screenshots de falhas (artifact)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-falhas
+          path: cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: Publicar vídeos da execução (artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: videos-cypress
+          path: cypress/videos
+          if-no-files-found: ignore
+          retention-days: 7
