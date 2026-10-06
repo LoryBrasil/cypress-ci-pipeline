@@ -80,8 +80,10 @@ O resumo rápido aparece também direto na página da execução (Job Summary).
 
 Após o push, a evidência está em **Actions** do repositório. Adicione aqui o link da execução bem-sucedida e um print:
 
-- Execução: _colar link_
-- Print do relatório / Job Summary: _colar imagem_
+- Execução por push (sucesso, 10/10 testes): https://github.com/LoryBrasil/cypress-ci-pipeline/actions/runs/37520356569
+- Execução manual (workflow_dispatch): run #9 na aba Actions
+- Execução agendada: cron 0 11 * * 1-5 (seg a sex, 07:00 em Manaus), visível em Actions com filtro event:schedule
+- Relatório HTML: artifact relatorio-cypress em cada execução; resumo (10 passaram, 0 falharam) no Job Summary.
 
 ## Autora
 
